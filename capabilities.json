@@ -1,0 +1,86 @@
+{
+  "dataRoles": [
+    {
+      "displayName": "Category Data",
+      "name": "category",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Measure Data",
+      "name": "measure",
+      "kind": "Measure"
+    }
+  ],
+  "objects": {
+    "dataPoint": {
+      "displayName": "Indego Visual Settings",
+      "properties": {
+
+
+        "speed": {
+          "displayName": "Animation Speed (high value is slower speed, 1000 is default",
+          "description": "Animation Speed",
+          "type": {
+            "numeric": true
+          }
+        },
+        "SVG_width": {
+          "displayName": "SVG Width",
+          "description": "width",
+          "type": {
+            "numeric": true
+          }
+        },
+
+        "SVG_height": {
+          "displayName": "SVG Height",
+          "description": "Height",
+          "type": {
+            "numeric": true
+          }
+        }
+
+      }
+    }
+  },
+
+  "dataViewMappings": [
+    {
+      "categorical": {
+        "categories": {
+          "for": {
+            "in": "category"
+          },
+          "dataReductionAlgorithm": {
+            "top": { "count": 30000 }
+          }
+        },
+        "values": {
+          "select": [
+            {
+              "bind": {
+                "to": "measure"
+              }
+            }
+          ]
+        }
+      },
+      "table": {
+        "rows": {
+          "select": [
+            {
+              "for": {
+                "in": "column"
+              }
+            },
+            {
+              "for": {
+                "in": "value"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

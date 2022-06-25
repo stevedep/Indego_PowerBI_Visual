@@ -1,0 +1,17 @@
+{
+    "version": "1.0.0",
+    "author": {"name":"IndegoDev","email":"IndegoDev@gmail.com"},
+    "resources": [
+        {
+            "resourceId": "rId0",
+            "sourceType": 5,
+            "file": "resources/testF1735EA569854534B485DEC49DF86504.pbiviz.json"
+        }
+    ],
+    "visual": {"name":"test","displayName":"test","guid":"testF1735EA569854534B485DEC49DF86504","visualClassName":"Visual","version":"1.0.0","description":"Indego Visual","supportUrl":"www.google.com","gitHubUrl":""},
+    "metadata": {
+        "pbivizjson": {
+            "resourceId": "rId0"
+        }
+    }  
+}

@@ -1,0 +1,23 @@
+{
+  "visual": {
+    "name": "test",
+    "displayName": "test",
+    "guid": "testF1735EA569854534B485DEC49DF86504",
+    "visualClassName": "Visual",
+    "version": "1.0.0",
+    "description": "Indego Visual",
+    "supportUrl": "www.google.com",
+    "gitHubUrl": ""
+  },
+  "apiVersion": "3.8.0",
+  "author": {
+    "name": "IndegoDev",
+    "email": "IndegoDev@gmail.com"
+  },
+  "assets": { "icon": "assets/icon.png" },
+  "externalJS": null,
+  "style": "style/visual.less",
+  "capabilities": "capabilities.json",
+  "dependencies": null,
+  "stringResources": []
+}
