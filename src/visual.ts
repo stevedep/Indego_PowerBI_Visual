@@ -80,7 +80,7 @@ export class Visual implements IVisual {
         this.svg.selectAll("polygon").remove(); this.svg.selectAll("circle").remove();  this.svg.selectAll(".circles").remove(); this.svg.selectAll("path").remove();
 
         for (let i = dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "SVG"); i < dataView.categorical.categories.length; i++) {
-            let Z = dataView.categorical.categories[i].values //dataView.categorical.values[i].values;
+            let Z = dataView.categorical.categories[i].values
             let data3 = Z.map(function (d) {
                 if (isNaN(<number>d)) {
                     var f;
@@ -108,32 +108,45 @@ export class Visual implements IVisual {
             .x(i => (i[1]) * (width / SVG_width2))
             .y(i => (i[0]) * (height / SVG_height2))
 
-        let L = (line(data));
-        let I = L.length;
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        let aantal = 2;
+        let blok = data.length / aantal;
+        let kleur;
+        async function loopnumbers2() {
+            for (let i = 0; i < aantal; i++) {
 
-        const path = this.svg.append("path")
-            .attr("fill", "none")
-            .attr("stroke", "black")
-            .attr("stroke-width", 2)
-            .attr("stroke-linejoin", "round")
-            .attr("stroke-linecap", "round")
-            .attr("d", L);
+                let L = (line(data.slice(blok * i, blok * (i + 1))));
+                
+                let s = function (i) {
+                    switch (i) {
+                        case 0:
+                            return "black";
+                        case 1:
+                            return "red";
+                    }
+                }
+                console.log(s(i));
 
-        // Measure the length of the given SVG path string.
-        //below was not working, solution found here: 2022-06-25
-        https://stackoverflow.com/questions/21140547/accessing-svg-path-length-in-d3
-        /*
-        function length(path) {
-            return (d3.create("svg:path").attr("d", path).node()) .getTotalLength();
-        }  // const l = length(line(I));
-        */ 
-        path
-            .interrupt()
-            .attr("stroke-dasharray", function (d) { return "0," + this.getTotalLength(); })
-            .transition()
-            .duration(5000)
-            .ease(d3.easeLinear)
-            .attr("stroke-dasharray", function (d) { return this.getTotalLength() + "," + this.getTotalLength(); })
+
+                const path = this.svg.append("path")
+                    .attr("fill", "none")
+                    .attr("stroke", s(i))
+                    .attr("stroke-width", 2)
+                    .attr("stroke-linejoin", "round")
+                    .attr("stroke-linecap", "round")
+                    .attr("d", L);
+
+                path
+                    .interrupt()
+                    .attr("stroke-dasharray", function (d) { return "0," + this.getTotalLength(); })
+                    .transition()
+                    .duration(5000)
+                    .ease(d3.easeLinear)
+                    .attr("stroke-dasharray", function (d) { return this.getTotalLength() + "," + this.getTotalLength(); })
+                await sleep(5000);
+            }
+        }
+        loopnumbers2.call(this);
        
     }
     private static parseSettings(dataView: DataView): VisualSettings {
