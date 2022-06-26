@@ -74,6 +74,60 @@ export class Visual implements IVisual {
         X.map(x => <number>x);
         let Y = dataView.categorical.categories[dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "Y")].values
         X.map(y => <number>y);
+        let DT = dataView.categorical.categories[dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "DT")].values
+        let DT2 = [];
+        for (let i = 0; i < DT.length; i++) {
+            if (DT[i] !== null) {
+                DT2.push(i,new Date(<string>DT[i]));
+            }
+        }
+
+       let codes=[
+            [0,"Readingstatus"],
+            [257,"Charging"],
+            [258,"Docked"],
+            [259,"Docked-Softwareupdate"],
+            [260,"Docked"],
+            [261,"Docked"],
+            [262,"Docked-Loadingmap"],
+            [263,"Docked-Savingmap"],
+            [513,"Mowing"],
+            [514,"Relocalising"],
+            [515,"Loadingmap"],
+            [516,"Learninglawn"],
+            [517,"Paused"],
+            [518,"Bordercut"],
+            [519,"Idleinlawn"],
+            [769,"ReturningtoDock"],
+            [770,"ReturningtoDock"],
+            [771,"ReturningtoDock-Batterylow"],
+            [772,"Returningtodock-Calendartimeslotended"],
+            [773,"Returningtodock-Batterytemprange"],
+            [774,"Returningtodock"],
+            [775,"Returningtodock-Lawncomplete"],
+            [776,"Returningtodock- Relocalising"]
+        ];
+
+
+
+        let ET = dataView.categorical.categories[dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "ET")].values
+        let ETstartindex = 0;
+        let ETRange = [];
+
+        for (let i = 0; i < ET.length; i++) {
+            if (i != 0) if (ET[i] != ET[i - 1]) { // exclude the null range that is used to draw the map
+                if (ET[i - 1] != null) ETRange.push([ETstartindex, i - 1, ET[i - 1], [DT[ETstartindex] , DT[i-1] ]  ]);
+                ETstartindex = i;
+            }  
+        }
+        console.log(ETRange);
+
+        //DT.map(x => new Date(<string>x));
+        let min = Math.min.apply(null, DT2);
+        let max = Math.max.apply(null, DT2);
+        let diff = max - min;
+        
+        //debugger;
 
         let data: [number, number][] = X.map((e, i) => [<number>e, <number>Y[i]]);
 
@@ -81,7 +135,7 @@ export class Visual implements IVisual {
 
         for (let i = dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "SVG"); i < dataView.categorical.categories.length; i++) {
             let Z = dataView.categorical.categories[i].values
-            let data3 = Z.map(function (d) {
+            let data3 = Z.map(function (d) { 
                 if (isNaN(<number>d)) {
                     var f;
                     var x: number;
@@ -109,29 +163,46 @@ export class Visual implements IVisual {
             .y(i => (i[0]) * (height / SVG_height2))
 
         const sleep = ms => new Promise(r => setTimeout(r, ms));
-        let aantal = 2;
-        let blok = data.length / aantal;
+        
         let kleur;
         async function loopnumbers2() {
-            for (let i = 0; i < aantal; i++) {
-
-                let L = (line(data.slice(blok * i, blok * (i + 1))));
-                
-                let s = function (i) {
-                    switch (i) {
-                        case 0:
-                            return "black";
-                        case 1:
-                            return "red";
+            for (let i = 0; i < ETRange.length; i++) {
+                let L = (line(data.slice(ETRange[i][0], ETRange[i][1])));     
+                let eind = new Date(ETRange[i][3][1]);
+                let begin = new Date(ETRange[i][3][0]);
+                let diff = eind.getTime() - begin.getTime();
+                //console.log(diff);
+                let eventcode = ETRange[i][2];
+                let s = function (i) {                    
+                    switch (true) {
+                        case eventcode < 300: //docked
+                            return "pink"; break;
+                        case eventcode == 513: //mowing
+                            return "blue"; break;
+                        case eventcode == 514: //relocalizing
+                            return "orange"; break;
+                        case eventcode == 518: //border cut
+                            return "green"; break;
+                        case eventcode == 519: //idle in lawn
+                            return "red"; break;
+                        case eventcode > 600: //going back
+                            return "purple"; break;
+                        default: return "white";
                     }
                 }
-                console.log(s(i));
-
+                let sw = function (i) {
+                    switch (true) {
+                        case eventcode < 300: //docked
+                            return 20; break;                       
+                        default: return 2;
+                    }
+                }
+               // console.log(s(i));
 
                 const path = this.svg.append("path")
                     .attr("fill", "none")
                     .attr("stroke", s(i))
-                    .attr("stroke-width", 2)
+                    .attr("stroke-width",sw(i))
                     .attr("stroke-linejoin", "round")
                     .attr("stroke-linecap", "round")
                     .attr("d", L);
@@ -140,10 +211,10 @@ export class Visual implements IVisual {
                     .interrupt()
                     .attr("stroke-dasharray", function (d) { return "0," + this.getTotalLength(); })
                     .transition()
-                    .duration(5000)
+                    .duration(diff/300)
                     .ease(d3.easeLinear)
                     .attr("stroke-dasharray", function (d) { return this.getTotalLength() + "," + this.getTotalLength(); })
-                await sleep(5000);
+                await sleep(diff/300);
             }
         }
         loopnumbers2.call(this);
