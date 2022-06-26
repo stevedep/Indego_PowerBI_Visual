@@ -30,11 +30,6 @@
       "displayName": "SVG Drawing Data",
       "name": "SVG",
       "kind": "Grouping"
-    },
-    {
-      "displayName": "Measure Data",
-      "name": "measure",
-      "kind": "Measure"
     }
   ],
   "objects": {
@@ -111,31 +106,6 @@
               "count": 30000
             }
           }
-        },
-        "values": {
-          "select": [
-            {
-              "bind": {
-                "to": "measure"
-              }
-            }
-          ]
-        }
-      },
-      "table": {
-        "rows": {
-          "select": [
-            {
-              "for": {
-                "in": "column"
-              }
-            },
-            {
-              "for": {
-                "in": "value"
-              }
-            }
-          ]
         }
       }
     }
