@@ -44,63 +44,23 @@ import { VisualSettings } from "./settings";
 
 import VisualObjectInstanceEnumeration = powerbi.VisualObjectInstanceEnumeration;
 
-
+//to find index of category
+import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
+import { dataRoleHelper } from "powerbi-visuals-utils-dataviewutils";
 
 export class Visual implements IVisual {
     private svg: Selection<SVGElement>; //added
-
     private visualSettings: VisualSettings;
-
-    private container: Selection<SVGElement>;
-    private textValue: Selection<SVGElement>;
-    private xval: Selection<SVGElement>;
-    private yval: Selection<SVGElement>;
-
-
-    constructor(options: VisualConstructorOptions) {
-
-        let random = d3.randomUniform(1e5, 1e7);
-
-        this.svg = d3.select(options.element)
+    constructor(options: VisualConstructorOptions) {this.svg = d3.select(options.element)
             .append('svg')
-            .classed('circleCard', true);
-        this.container = this.svg.append("g")
-            .classed('container', true);
-        this.textValue = this.container.append("text")
-            .classed("textValue", true)
-        this.xval = this.container.append("text")
-            .classed("textValue", true)
-        this.yval = this.container.append("text")
-            .classed("textValue", true)
+        }
 
 
-    }
-
-
-
-    private static parseSettings(dataView: DataView): VisualSettings {
-        return <VisualSettings>VisualSettings.parse(dataView);
-    }
-    //https://docs.microsoft.com/en-us/power-bi/developer/visuals/custom-visual-develop-tutorial-format-options
-    public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstanceEnumeration {
-        const settings: VisualSettings = this.visualSettings || <VisualSettings>VisualSettings.getDefault();
-        return VisualSettings.enumerateObjectInstances(settings, options);
-    }
-
-    /**
-     * This function gets called for each of the objects defined in the capabilities files and allows you to select which of the
-     * objects and properties you want to expose to the users in the property pane.
-     *
-     */
-
-    /*
-    public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
-        const settings: VisualSettings = this.visualSettings || <VisualSettings>VisualSettings.getDefault();
-        return VisualSettings.enumerateObjectInstances(this.settings || VisualSettings.getDefault(), options);
-    }
-    */
     public update(options: VisualUpdateOptions) {
         let dataView: DataView = options.dataViews[0];
+        let t = dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "SVG");
+        console.log(t);
+        //debugger;
         this.visualSettings = VisualSettings.parse<VisualSettings>(dataView);
         let width: number = options.viewport.width; let height: number = options.viewport.height;
         this.svg.attr("width", width); this.svg.attr("height", height);
@@ -110,20 +70,17 @@ export class Visual implements IVisual {
         height = (height > (width * SVG_height2 / SVG_width2)) ? width * SVG_height2 / SVG_width2 : height; 
         width = (width > (height * SVG_width2 / SVG_height2)) ? width = height * SVG_width2 / SVG_height2 : width;
         
-        let X = dataView.categorical.values[1].values;
+        let X = dataView.categorical.categories[dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "X")].values
         X.map(x => <number>x);
-        let Y = dataView.categorical.values[2].values;
+        let Y = dataView.categorical.categories[dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "Y")].values
         X.map(y => <number>y);
 
         let data: [number, number][] = X.map((e, i) => [<number>e, <number>Y[i]]);
 
-        this.svg.selectAll("polygon").remove();
-        this.svg.selectAll("circle").remove();
-        this.svg.selectAll(".circles").remove();
-        this.svg.selectAll("path").remove();
+        this.svg.selectAll("polygon").remove(); this.svg.selectAll("circle").remove();  this.svg.selectAll(".circles").remove(); this.svg.selectAll("path").remove();
 
-        for (let i = 3; i < dataView.categorical.values.length; i++) {
-            let Z = dataView.categorical.values[i].values;
+        for (let i = dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "SVG"); i < dataView.categorical.categories.length; i++) {
+            let Z = dataView.categorical.categories[i].values //dataView.categorical.values[i].values;
             let data3 = Z.map(function (d) {
                 if (isNaN(<number>d)) {
                     var f;
@@ -163,31 +120,41 @@ export class Visual implements IVisual {
             .attr("d", L);
 
         // Measure the length of the given SVG path string.
-
-
         //below was not working, solution found here: 2022-06-25
         https://stackoverflow.com/questions/21140547/accessing-svg-path-length-in-d3
-
         /*
         function length(path) {
             return (d3.create("svg:path").attr("d", path).node()) .getTotalLength();
-        }
-        */
-        //function animate() {
-            
-               // const l = length(line(I));
-
-                path
-                   // .interrupt()
-                    .attr("stroke-dasharray", function (d) { return "0," + this.getTotalLength(); })
-                    .transition()
-                    .duration(5000)
-                    .ease(d3.easeLinear)
-                    .attr("stroke-dasharray", function (d) { return this.getTotalLength() + "," + this.getTotalLength(); })
-       // }
-
-       // animate();
-
-       // return Object.assign(this.svg.node(), { animate });
+        }  // const l = length(line(I));
+        */ 
+        path
+            .interrupt()
+            .attr("stroke-dasharray", function (d) { return "0," + this.getTotalLength(); })
+            .transition()
+            .duration(5000)
+            .ease(d3.easeLinear)
+            .attr("stroke-dasharray", function (d) { return this.getTotalLength() + "," + this.getTotalLength(); })
+       
     }
+    private static parseSettings(dataView: DataView): VisualSettings {
+        return <VisualSettings>VisualSettings.parse(dataView);
+    }
+    //https://docs.microsoft.com/en-us/power-bi/developer/visuals/custom-visual-develop-tutorial-format-options
+    public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstanceEnumeration {
+        const settings: VisualSettings = this.visualSettings || <VisualSettings>VisualSettings.getDefault();
+        return VisualSettings.enumerateObjectInstances(settings, options);
+    }
+
+/**
+ * This function gets called for each of the objects defined in the capabilities files and allows you to select which of the
+ * objects and properties you want to expose to the users in the property pane.
+ *
+ */
+
+/*
+public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
+    const settings: VisualSettings = this.visualSettings || <VisualSettings>VisualSettings.getDefault();
+    return VisualSettings.enumerateObjectInstances(this.settings || VisualSettings.getDefault(), options);
+}
+*/
 }

@@ -1,8 +1,34 @@
 {
   "dataRoles": [
     {
-      "displayName": "Category Data",
-      "name": "category",
+      "displayName": "Index",
+      "name": "I",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "X",
+      "name": "X",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Y",
+      "name": "Y",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Date time",
+      "name": "DT",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Event Type",
+      "name": "ET",
+      "kind": "Grouping"
+    },
+
+    {
+      "displayName": "SVG Drawing Data",
+      "name": "SVG",
       "kind": "Grouping"
     },
     {
@@ -48,11 +74,42 @@
     {
       "categorical": {
         "categories": {
-          "for": {
-            "in": "category"
-          },
+          "select": [
+            {
+              "bind": {
+                "to": "I"
+              }
+            },
+            {
+              "bind": {
+                "to": "X"
+              }
+            },
+            {
+              "bind": {
+                "to": "Y"
+              }
+            },
+            {
+              "bind": {
+                "to": "DT"
+              }
+            },
+            {
+              "bind": {
+                "to": "ET"
+              }
+            },
+            {
+              "bind": {
+                "to": "SVG"
+              }
+            }
+          ],
           "dataReductionAlgorithm": {
-            "top": { "count": 30000 }
+            "top": {
+              "count": 30000
+            }
           }
         },
         "values": {
