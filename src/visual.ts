@@ -48,20 +48,99 @@ import VisualObjectInstanceEnumeration = powerbi.VisualObjectInstanceEnumeration
 import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
 import { dataRoleHelper } from "powerbi-visuals-utils-dataviewutils";
 
+//for interfaces
+import { Primitive } from "d3";
+
+interface XYDates {
+    i: number;
+    xy_date: Date;
+    hour: number;
+    minute: number;
+};
+
+// if (ET[i - 1] != null && diff != 0) ETRange.push([ETstartindex, i - 1, ET[i - 1], diff]);// [DT[ETstartindex] , DT[i-1] ]  ]);
+
+interface ETRange {
+    start: number;
+    eind: number;
+    state: number;
+    duration: number;
+};
+
+
 export class Visual implements IVisual {
     private svg: Selection<SVGElement>; //added
     private visualSettings: VisualSettings;
-    constructor(options: VisualConstructorOptions) {this.svg = d3.select(options.element)
+
+    //to print info
+    private container: Selection<SVGElement>;
+    private textValue: Selection<SVGElement>;
+    private state: Selection<SVGElement>;
+   
+
+    constructor(options: VisualConstructorOptions) {        
+        this.svg = d3.select(options.element)
             .append('svg')
+            .classed('circleCard', true);
+        this.container = this.svg.append("g")
+            .classed('container', true);
+        this.textValue = this.container.append("text")
+            .classed("textValue", true)
+        this.state = this.container.append("text")
+            .classed("textValue", true)
+        
+
+        this.textValue
+            .text("Value")
+            .attr("x", "60%")
+            .attr("y", "90%")
+            .attr("dy", "0.35em")
+            .attr("text-anchor", "middle")
+            .style("font-size", 30 + "px");        
+        this.state
+            .text("Value")
+            .attr("x", "70%")
+            .attr("y", "80%")
+            .attr("dy", "0.35em")
+            .attr("text-anchor", "middle")
+            .style("font-size", 30 + "px");
+      
+
         }
 
 
     public update(options: VisualUpdateOptions) {
+
+        this.svg.selectAll(".textValue").remove();
+        this.textValue = this.container.append("text")
+            .classed("textValue", true)
+        this.state = this.container.append("text")
+            .classed("textValue", true)
+
+        this.textValue
+            .text("Value")
+            .attr("x", "60%")
+            .attr("y", "90%")
+            .attr("dy", "0.35em")
+            .attr("text-anchor", "middle")
+            .style("font-size", 30 + "px");
+        this.state
+            .text("Value")
+            .attr("x", "70%")
+            .attr("y", "80%")
+            .attr("dy", "0.35em")
+            .attr("text-anchor", "middle")
+            .style("font-size", 30 + "px");
+
+
         let dataView: DataView = options.dataViews[0];
         let t = dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "SVG");
         console.log(t);
         //debugger;
         this.visualSettings = VisualSettings.parse<VisualSettings>(dataView);
+
+        let speedsetting: number = Number(this.visualSettings.dataPoint.speed);
+        //debugger;
         let width: number = options.viewport.width; let height: number = options.viewport.height;
         this.svg.attr("width", width); this.svg.attr("height", height);
         let SVG_width2: number = Number(this.visualSettings.dataPoint.SVG_width);
@@ -75,58 +154,37 @@ export class Visual implements IVisual {
         let Y = dataView.categorical.categories[dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "Y")].values
         X.map(y => <number>y);
         let DT = dataView.categorical.categories[dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "DT")].values
-        let DT2 = [];
-        for (let i = 0; i < DT.length; i++) {
+
+        let DT2: XYDates[] = []; 
+        for (let i : number = 0; i < DT.length; i++) {
             if (DT[i] !== null) {
-                DT2.push(i,new Date(<string>DT[i]));
+                DT2.push({ i: i, xy_date: new Date(<string>DT[i]), hour: new Date(<string>DT[i]).getHours(), minute: new Date(<string>DT[i]).getMinutes() });
             }
         }
 
-       let codes=[
-            [0,"Readingstatus"],
-            [257,"Charging"],
-            [258,"Docked"],
-            [259,"Docked-Softwareupdate"],
-            [260,"Docked"],
-            [261,"Docked"],
-            [262,"Docked-Loadingmap"],
-            [263,"Docked-Savingmap"],
-            [513,"Mowing"],
-            [514,"Relocalising"],
-            [515,"Loadingmap"],
-            [516,"Learninglawn"],
-            [517,"Paused"],
-            [518,"Bordercut"],
-            [519,"Idleinlawn"],
-            [769,"ReturningtoDock"],
-            [770,"ReturningtoDock"],
-            [771,"ReturningtoDock-Batterylow"],
-            [772,"Returningtodock-Calendartimeslotended"],
-            [773,"Returningtodock-Batterytemprange"],
-            [774,"Returningtodock"],
-            [775,"Returningtodock-Lawncomplete"],
-            [776,"Returningtodock- Relocalising"]
-        ];
-
-
-
+       
         let ET = dataView.categorical.categories[dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "ET")].values
         let ETstartindex = 0;
-        let ETRange = [];
+        let ETRange: ETRange[] = [];
 
+        //define sets for different states
         for (let i = 0; i < ET.length; i++) {
             if (i != 0) if (ET[i] != ET[i - 1]) { // exclude the null range that is used to draw the map
-                if (ET[i - 1] != null) ETRange.push([ETstartindex, i - 1, ET[i - 1], [DT[ETstartindex] , DT[i-1] ]  ]);
+                let eind = new Date(<string>DT[i - 1]);
+                let begin = new Date(<string>DT[ETstartindex]);
+                let diff = eind.getTime() - begin.getTime();
+                if (ET[i - 1] != null && diff != 0) ETRange.push({ start: ETstartindex, eind: i - 1, state: <number>ET[i - 1], duration: diff });// [DT[ETstartindex] , DT[i-1] ]  ]);
                 ETstartindex = i;
             }  
         }
+        //debugger;
         console.log(ETRange);
-
+        /*
         //DT.map(x => new Date(<string>x));
         let min = Math.min.apply(null, DT2);
         let max = Math.max.apply(null, DT2);
         let diff = max - min;
-        
+        */
         //debugger;
 
         let data: [number, number][] = X.map((e, i) => [<number>e, <number>Y[i]]);
@@ -163,16 +221,72 @@ export class Visual implements IVisual {
             .y(i => (i[0]) * (height / SVG_height2))
 
         const sleep = ms => new Promise(r => setTimeout(r, ms));
-        
-        let kleur;
+
+        let MOWER_STATE_DESCRIPTION_DETAIL = {
+            0: "Reading status",
+            101: "Mower lifted",
+            257: "Charging",
+            258: "Docked",
+            259: "Docked - Software update",
+            260: "Charging",
+            261: "Docked",
+            262: "Docked - Loading map",
+            263: "Docked - Saving map",
+            266: "Docked - Leaving dock",
+            512: "Mowing - Leaving dock",
+            513: "Mowing",
+            514: "Mowing - Relocalising",
+            515: "Mowing - Loading map",
+            516: "Mowing - Learning lawn",
+            517: "Mowing - Paused",
+            518: "Border cut",
+            519: "Idle in lawn",
+            520: "Mowing - Learning lawn paused",
+            521: "Border cut",
+            523: "Mowing - Spot mowing",
+            524: "Mowing - Random",
+            525: "Mowing - Random complete",
+            768: "Returning to Dock",
+            769: "Returning to Dock",
+            770: "Returning to Dock",
+            771: "Returning to Dock - Battery low",
+            772: "Returning to dock - Calendar timeslot ended",
+            773: "Returning to dock - Battery temp range",
+            774: "Returning to dock - requested by user/app",
+            775: "Returning to dock - Lawn complete",
+            776: "Returning to dock - Relocalising",
+            1005: "Connection to dockingstation failed",
+            1025: "Diagnostic mode",
+            1026: "End of life",
+            1027: "Service Requesting Status",
+            1038: "Mower immobilized",
+            1281: "Software update",
+            1537: "Stuck on lawn, help needed",
+            64513: "Sleeping",
+            99999: "Offline",
+        }
+
+        async function print(start, eind, duur) {
+            let DS = DT2.slice(start, eind); // date times
+            let val = MOWER_STATE_DESCRIPTION_DETAIL[<number>ET[start]];
+            this.state.text(val);
+            let L = DS.length;
+            for (let i = 0; i < L; i++) {
+                //for (const dt of DTS2) { //use for loop instead of forEach https://stackoverflow.com/questions/37576685/using-async-await-with-a-foreach-loop
+                await sleep(duur / L);
+                this.textValue.text(DT2[i].hour + ":" +DT2[i].minute);
+            }
+        }
+         //call om the this context mee te geven
+
+
         async function loopnumbers2() {
-            for (let i = 0; i < ETRange.length; i++) {
-                let L = (line(data.slice(ETRange[i][0], ETRange[i][1])));     
-                let eind = new Date(ETRange[i][3][1]);
-                let begin = new Date(ETRange[i][3][0]);
-                let diff = eind.getTime() - begin.getTime();
+            for (let i = 0; i < ETRange.length; i++) {                
+                let L = (line(data.slice(ETRange[i].start, ETRange[i].eind))); 
                 //console.log(diff);
-                let eventcode = ETRange[i][2];
+                let eventcode = ETRange[i].state;
+                let diff = ETRange[i].duration; // duration
+                print.call(this, ETRange[i].start, ETRange[i].eind, diff / speedsetting );
                 let s = function (i) {                    
                     switch (true) {
                         case eventcode < 300: //docked
@@ -211,10 +325,10 @@ export class Visual implements IVisual {
                     .interrupt()
                     .attr("stroke-dasharray", function (d) { return "0," + this.getTotalLength(); })
                     .transition()
-                    .duration(diff/300)
+                    .duration(diff/speedsetting)
                     .ease(d3.easeLinear)
                     .attr("stroke-dasharray", function (d) { return this.getTotalLength() + "," + this.getTotalLength(); })
-                await sleep(diff/300);
+                await sleep(diff/speedsetting);
             }
         }
         loopnumbers2.call(this);
