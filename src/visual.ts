@@ -49,7 +49,7 @@ import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
 import { dataRoleHelper } from "powerbi-visuals-utils-dataviewutils";
 
 //for interfaces
-import { Primitive } from "d3";
+import { ContainerElement, Primitive } from "d3";
 
 interface XYDates {
     i: number;
@@ -65,17 +65,24 @@ interface ETRange {
     eind: number;
     state: number;
     duration: number;
+    cum_duration: number;
+    width: number;
 };
 
 
 export class Visual implements IVisual {
     private svg: Selection<SVGElement>; //added
+    private svg2: Selection<SVGElement>; //added
     private visualSettings: VisualSettings;
 
     //to print info
     private container: Selection<SVGElement>;
     private textValue: Selection<SVGElement>;
     private state: Selection<SVGElement>;
+    recSelection: d3.Selection<d3.BaseType, unknown, SVGElement, any>;
+    totalduration: number;
+    cumduration: number;
+    dail: d3.Selection<SVGRectElement, any, any, any>;
    
 
     constructor(options: VisualConstructorOptions) {        
@@ -132,6 +139,12 @@ export class Visual implements IVisual {
             .attr("text-anchor", "middle")
             .style("font-size", 30 + "px");
 
+        this.dail = this.svg
+            .append('rect')
+            .classed('dail', true);
+
+        
+
 
         let dataView: DataView = options.dataViews[0];
         let t = dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "SVG");
@@ -148,7 +161,16 @@ export class Visual implements IVisual {
 
         height = (height > (width * SVG_height2 / SVG_width2)) ? width * SVG_height2 / SVG_width2 : height; 
         width = (width > (height * SVG_width2 / SVG_height2)) ? width = height * SVG_width2 / SVG_height2 : width;
-        
+
+        this.dail
+            .attr("x", 0)
+            .attr("y", height * 95 / 100)
+            .attr("width", 5)
+            .attr("height", 50)
+            .style("fill", "red")
+            .style("fill-opacity", 0.8);
+
+
         let X = dataView.categorical.categories[dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "X")].values
         X.map(x => <number>x);
         let Y = dataView.categorical.categories[dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "Y")].values
@@ -158,14 +180,16 @@ export class Visual implements IVisual {
         let DT2: XYDates[] = []; 
         for (let i : number = 0; i < DT.length; i++) {
             if (DT[i] !== null) {
-                DT2.push({ i: i, xy_date: new Date(<string>DT[i]), hour: new Date(<string>DT[i]).getHours(), minute: new Date(<string>DT[i]).getMinutes() });
+                DT2.push({ i: i, xy_date: new Date(<string>DT[i]), hour: new Date(<string>DT[i]).getHours(), minute: new Date(<string>DT[i]).getMinutes()});
             }
         }
-
+        
        
         let ET = dataView.categorical.categories[dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "ET")].values
         let ETstartindex = 0;
         let ETRange: ETRange[] = [];
+        let oldduration: number = 0;
+        this.cumduration = 0;
 
         //define sets for different states
         for (let i = 0; i < ET.length; i++) {
@@ -173,10 +197,47 @@ export class Visual implements IVisual {
                 let eind = new Date(<string>DT[i - 1]);
                 let begin = new Date(<string>DT[ETstartindex]);
                 let diff = eind.getTime() - begin.getTime();
-                if (ET[i - 1] != null && diff != 0) ETRange.push({ start: ETstartindex, eind: i - 1, state: <number>ET[i - 1], duration: diff });// [DT[ETstartindex] , DT[i-1] ]  ]);
+                this.cumduration = this.cumduration + diff;
+                if (ET[i - 1] != null && diff != 0)
+
+                    ETRange.push({
+                    start: ETstartindex,
+                    eind: i - 1,
+                    state: <number>ET[i - 1],
+                    duration: diff
+                    , cum_duration: this.cumduration//ETRange[i-1].duration + diff
+                    , width: options.viewport.width 
+                });// [DT[ETstartindex] , DT[i-1] ]  ]);
                 ETstartindex = i;
+
             }  
-        }
+        };
+        
+        let ETRangeLength = ETRange.length;
+        this.totalduration = ETRange[ETRangeLength - 1].cum_duration;
+        console.log(ETRange);
+        //debugger;
+        this.svg.selectAll(".rect").remove();
+        // Rectangles
+        this.recSelection = this.svg
+            .selectAll('.rect')
+            .data(ETRange); // map data, with indexes, to svg element collection
+        const recSelectionMerged = this.recSelection
+            .enter()
+            .append('rect')
+            .classed('rect', true);
+
+        this.svg.selectAll('.rect')
+            .transition()
+            .duration(1000)
+            .attr("x", (d: ETRange) => {return  (d.width  * (d.cum_duration / this.totalduration))- 10 }) //width devided by number of kpis for x position
+            .attr("y", height * 95/100)
+            .attr("width", 5)
+            .attr("height", 50)
+            .style("fill", "black")
+            .style("fill-opacity", 0.8);
+            
+
         //debugger;
         console.log(ETRange);
         /*
@@ -286,7 +347,14 @@ export class Visual implements IVisual {
                 //console.log(diff);
                 let eventcode = ETRange[i].state;
                 let diff = ETRange[i].duration; // duration
-                print.call(this, ETRange[i].start, ETRange[i].eind, diff / speedsetting );
+                print.call(this, ETRange[i].start, ETRange[i].eind, diff / speedsetting);
+
+                this.dail
+                    .transition()
+                    .duration(diff / speedsetting)
+                    .ease(d3.easeLinear)
+                    .attr("x", width * (ETRange[i].cum_duration / this.totalduration) - 10); 
+
                 let s = function (i) {                    
                     switch (true) {
                         case eventcode < 300: //docked
@@ -311,7 +379,6 @@ export class Visual implements IVisual {
                         default: return 2;
                     }
                 }
-               // console.log(s(i));
 
                 const path = this.svg.append("path")
                     .attr("fill", "none")
