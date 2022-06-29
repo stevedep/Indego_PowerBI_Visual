@@ -67,6 +67,7 @@ interface ETRange {
     duration: number;
     cum_duration: number;
     width: number;
+    endhour: number;
 };
 
 
@@ -83,6 +84,8 @@ export class Visual implements IVisual {
     totalduration: number;
     cumduration: number;
     dail: d3.Selection<SVGRectElement, any, any, any>;
+    times: d3.Selection<SVGTextElement, any, any, any>;
+    txtSelection: d3.Selection<d3.BaseType, ETRange, SVGElement, any>;
    
 
     constructor(options: VisualConstructorOptions) {        
@@ -118,11 +121,16 @@ export class Visual implements IVisual {
 
     public update(options: VisualUpdateOptions) {
 
+        this.svg.selectAll(".dail").remove();
         this.svg.selectAll(".textValue").remove();
         this.textValue = this.container.append("text")
             .classed("textValue", true)
         this.state = this.container.append("text")
             .classed("textValue", true)
+
+        this.times = this.container.append("text")
+            .classed("time", true)
+
 
         this.textValue
             .text("Value")
@@ -197,6 +205,8 @@ export class Visual implements IVisual {
                 let eind = new Date(<string>DT[i - 1]);
                 let begin = new Date(<string>DT[ETstartindex]);
                 let diff = eind.getTime() - begin.getTime();
+                let endtime = new Date(eind.getTime());
+                
                 this.cumduration = this.cumduration + diff;
                 if (ET[i - 1] != null && diff != 0)
 
@@ -206,7 +216,8 @@ export class Visual implements IVisual {
                     state: <number>ET[i - 1],
                     duration: diff
                     , cum_duration: this.cumduration//ETRange[i-1].duration + diff
-                    , width: options.viewport.width 
+                        , width: options.viewport.width 
+                    , endhour : endtime.getHours()
                 });// [DT[ETstartindex] , DT[i-1] ]  ]);
                 ETstartindex = i;
 
@@ -216,6 +227,7 @@ export class Visual implements IVisual {
         let ETRangeLength = ETRange.length;
         this.totalduration = ETRange[ETRangeLength - 1].cum_duration;
         console.log(ETRange);
+
         //debugger;
         this.svg.selectAll(".rect").remove();
         // Rectangles
@@ -237,6 +249,27 @@ export class Visual implements IVisual {
             .style("fill", "black")
             .style("fill-opacity", 0.8);
             
+
+        //debugger;
+        this.svg.selectAll(".time").remove();
+        // Rectangles
+        this.txtSelection = this.svg
+            .selectAll('.time')
+            .data(ETRange); // map data, with indexes, to svg element collection
+        const txtSelectionMerged = this.txtSelection
+            .enter()
+            .append('text')
+            .classed('time', true);
+
+        this.svg.selectAll('.time')
+            .text((d : ETRange)=> d.endhour)
+            .attr("x", (d: ETRange) => { return (d.width * (d.cum_duration / this.totalduration)) - 10 }) //width devided by number of kpis for x position
+            .attr("y", height * 107 / 100)
+            .attr("dy", "0.35em")
+            .attr("text-anchor", "middle")
+            .style("font-size", 10 + "px");
+
+
 
         //debugger;
         console.log(ETRange);
@@ -334,8 +367,10 @@ export class Visual implements IVisual {
             let L = DS.length;
             for (let i = 0; i < L; i++) {
                 //for (const dt of DTS2) { //use for loop instead of forEach https://stackoverflow.com/questions/37576685/using-async-await-with-a-foreach-loop
-                await sleep(duur / L);
-                this.textValue.text(DT2[i].hour + ":" +DT2[i].minute);
+                if (i % 100 == 0) {
+                    await sleep((duur / L)*100);
+                    this.textValue.text(DT2[i].hour + ":" + DT2[i].minute);
+                }
             }
         }
          //call om the this context mee te geven
