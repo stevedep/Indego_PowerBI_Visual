@@ -86,6 +86,7 @@ export class Visual implements IVisual {
     dail: d3.Selection<SVGRectElement, any, any, any>;
     times: d3.Selection<SVGTextElement, any, any, any>;
     txtSelection: d3.Selection<d3.BaseType, ETRange, SVGElement, any>;
+    counter: number = 0;
    
 
     constructor(options: VisualConstructorOptions) {        
@@ -377,62 +378,67 @@ export class Visual implements IVisual {
 
 
         async function loopnumbers2() {
-            for (let i = 0; i < ETRange.length; i++) {                
-                let L = (line(data.slice(ETRange[i].start, ETRange[i].eind))); 
-                //console.log(diff);
-                let eventcode = ETRange[i].state;
-                let diff = ETRange[i].duration; // duration
-                print.call(this, ETRange[i].start, ETRange[i].eind, diff / speedsetting);
+            let c: number = this.counter;
+            for (let i = 0; i < ETRange.length; i++) {
+                if (c == this.counter) {
+                    console.log('stil running');
+                    let L = (line(data.slice(ETRange[i].start, ETRange[i].eind)));
+                    //console.log(diff);
+                    let eventcode = ETRange[i].state;
+                    let diff = ETRange[i].duration; // duration
+                    print.call(this, ETRange[i].start, ETRange[i].eind, diff / speedsetting);
 
-                this.dail
-                    .transition()
-                    .duration(diff / speedsetting)
-                    .ease(d3.easeLinear)
-                    .attr("x", width * (ETRange[i].cum_duration / this.totalduration) - 10); 
+                    this.dail
+                        .transition()
+                        .duration(diff / speedsetting)
+                        .ease(d3.easeLinear)
+                        .attr("x", width * (ETRange[i].cum_duration / this.totalduration) - 10);
 
-                let s = function (i) {                    
-                    switch (true) {
-                        case eventcode < 300: //docked
-                            return "pink"; break;
-                        case eventcode == 513: //mowing
-                            return "blue"; break;
-                        case eventcode == 514: //relocalizing
-                            return "orange"; break;
-                        case eventcode == 518: //border cut
-                            return "green"; break;
-                        case eventcode == 519: //idle in lawn
-                            return "red"; break;
-                        case eventcode > 600: //going back
-                            return "purple"; break;
-                        default: return "white";
+                    let s = function (i) {
+                        switch (true) {
+                            case eventcode < 300: //docked
+                                return "pink"; break;
+                            case eventcode == 513: //mowing
+                                return "blue"; break;
+                            case eventcode == 514: //relocalizing
+                                return "orange"; break;
+                            case eventcode == 518: //border cut
+                                return "green"; break;
+                            case eventcode == 519: //idle in lawn
+                                return "red"; break;
+                            case eventcode > 600: //going back
+                                return "purple"; break;
+                            default: return "white";
+                        }
                     }
-                }
-                let sw = function (i) {
-                    switch (true) {
-                        case eventcode < 300: //docked
-                            return 20; break;                       
-                        default: return 2;
+                    let sw = function (i) {
+                        switch (true) {
+                            case eventcode < 300: //docked
+                                return 20; break;
+                            default: return 2;
+                        }
                     }
-                }
 
-                const path = this.svg.append("path")
-                    .attr("fill", "none")
-                    .attr("stroke", s(i))
-                    .attr("stroke-width",sw(i))
-                    .attr("stroke-linejoin", "round")
-                    .attr("stroke-linecap", "round")
-                    .attr("d", L);
+                    const path = this.svg.append("path")
+                        .attr("fill", "none")
+                        .attr("stroke", s(i))
+                        .attr("stroke-width", sw(i))
+                        .attr("stroke-linejoin", "round")
+                        .attr("stroke-linecap", "round")
+                        .attr("d", L);
 
-                path
-                    .interrupt()
-                    .attr("stroke-dasharray", function (d) { return "0," + this.getTotalLength(); })
-                    .transition()
-                    .duration(diff/speedsetting)
-                    .ease(d3.easeLinear)
-                    .attr("stroke-dasharray", function (d) { return this.getTotalLength() + "," + this.getTotalLength(); })
-                await sleep(diff/speedsetting);
+                    path
+                        .interrupt()
+                        .attr("stroke-dasharray", function (d) { return "0," + this.getTotalLength(); })
+                        .transition()
+                        .duration(diff / speedsetting)
+                        .ease(d3.easeLinear)
+                        .attr("stroke-dasharray", function (d) { return this.getTotalLength() + "," + this.getTotalLength(); })
+                    await sleep(diff / speedsetting);
+                } else { console.log('stop running')}
             }
         }
+        this.counter++;
         loopnumbers2.call(this);
        
     }
