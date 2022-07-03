@@ -58,6 +58,10 @@ interface XYDates {
     minute: number;
 };
 
+interface HourPrint {
+    x: number;
+    hour: number;
+};
 // if (ET[i - 1] != null && diff != 0) ETRange.push([ETstartindex, i - 1, ET[i - 1], diff]);// [DT[ETstartindex] , DT[i-1] ]  ]);
 
 interface ETRange {
@@ -68,6 +72,7 @@ interface ETRange {
     cum_duration: number;
     width: number;
     endhour: number;
+    starttime: Date;
 };
 
 
@@ -85,8 +90,9 @@ export class Visual implements IVisual {
     cumduration: number;
     dail: d3.Selection<SVGRectElement, any, any, any>;
     times: d3.Selection<SVGTextElement, any, any, any>;
-    txtSelection: d3.Selection<d3.BaseType, ETRange, SVGElement, any>;
+    txtSelection: d3.Selection<d3.BaseType, HourPrint, SVGElement, any>;
     counter: number = 0;
+    recactSelection: d3.Selection<d3.BaseType, ETRange, SVGElement, any>;
    
 
     constructor(options: VisualConstructorOptions) {        
@@ -100,7 +106,6 @@ export class Visual implements IVisual {
         this.state = this.container.append("text")
             .classed("textValue", true)
         
-
         this.textValue
             .text("Value")
             .attr("x", "60%")
@@ -115,8 +120,6 @@ export class Visual implements IVisual {
             .attr("dy", "0.35em")
             .attr("text-anchor", "middle")
             .style("font-size", 30 + "px");
-      
-
         }
 
 
@@ -132,43 +135,36 @@ export class Visual implements IVisual {
         this.times = this.container.append("text")
             .classed("time", true)
 
-
-        this.textValue
+        this.textValue //TIME
             .text("Value")
-            .attr("x", "60%")
-            .attr("y", "90%")
+            .attr("x", "65%")
+            .attr("y", "75%")
             .attr("dy", "0.35em")
             .attr("text-anchor", "middle")
-            .style("font-size", 30 + "px");
+            .style("font-size", 20 + "px");
         this.state
             .text("Value")
-            .attr("x", "70%")
-            .attr("y", "80%")
+            .attr("x", "75%")
+            .attr("y", "75%")
             .attr("dy", "0.35em")
             .attr("text-anchor", "middle")
-            .style("font-size", 30 + "px");
+            .style("font-size", 20 + "px");
 
         this.dail = this.svg
             .append('rect')
             .classed('dail', true);
 
-        
-
-
         let dataView: DataView = options.dataViews[0];
         let t = dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "SVG");
-        console.log(t);
-        //debugger;
         this.visualSettings = VisualSettings.parse<VisualSettings>(dataView);
 
         let speedsetting: number = Number(this.visualSettings.dataPoint.speed);
-        //debugger;
         let width: number = options.viewport.width; let height: number = options.viewport.height;
         this.svg.attr("width", width); this.svg.attr("height", height);
         let SVG_width2: number = Number(this.visualSettings.dataPoint.SVG_width);
         let SVG_height2: number = Number(this.visualSettings.dataPoint.SVG_height);
 
-        height = (height > (width * SVG_height2 / SVG_width2)) ? width * SVG_height2 / SVG_width2 : height; 
+        height = (height > (width * SVG_height2 / SVG_width2)) ? width * SVG_height2 / SVG_width2 : height;
         width = (width > (height * SVG_width2 / SVG_height2)) ? width = height * SVG_width2 / SVG_height2 : width;
 
         this.dail
@@ -186,106 +182,146 @@ export class Visual implements IVisual {
         X.map(y => <number>y);
         let DT = dataView.categorical.categories[dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "DT")].values
 
-        let DT2: XYDates[] = []; 
-        for (let i : number = 0; i < DT.length; i++) {
-            if (DT[i] !== null) {
-                DT2.push({ i: i, xy_date: new Date(<string>DT[i]), hour: new Date(<string>DT[i]).getHours(), minute: new Date(<string>DT[i]).getMinutes()});
+        let DT2: XYDates[] = [];
+        for (let i: number = 0; i < DT.length; i++) {
+           if (DT[i] !== null) {
+                DT2.push({ i: i, xy_date: new Date(<string>DT[i]), hour: new Date(<string>DT[i]).getHours(), minute: new Date(<string>DT[i]).getMinutes() });
             }
         }
-        
-       
+
         let ET = dataView.categorical.categories[dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "ET")].values
         let ETstartindex = 0;
         let ETRange: ETRange[] = [];
-        let oldduration: number = 0;
         this.cumduration = 0;
 
-        //define sets for different states
+//DEFINE RANGES FOR STATES
         for (let i = 0; i < ET.length; i++) {
             if (i != 0) if (ET[i] != ET[i - 1]) { // exclude the null range that is used to draw the map
                 let eind = new Date(<string>DT[i - 1]);
                 let begin = new Date(<string>DT[ETstartindex]);
                 let diff = eind.getTime() - begin.getTime();
                 let endtime = new Date(eind.getTime());
-                
+
                 this.cumduration = this.cumduration + diff;
                 if (ET[i - 1] != null && diff != 0)
 
                     ETRange.push({
-                    start: ETstartindex,
-                    eind: i - 1,
-                    state: <number>ET[i - 1],
-                    duration: diff
-                    , cum_duration: this.cumduration//ETRange[i-1].duration + diff
-                        , width: options.viewport.width 
-                    , endhour : endtime.getHours()
-                });// [DT[ETstartindex] , DT[i-1] ]  ]);
+                        start: ETstartindex,
+                        eind: i - 1,
+                        state: <number>ET[i - 1],
+                        duration: diff
+                        , cum_duration: this.cumduration//ETRange[i-1].duration + diff
+                        , width: options.viewport.width
+                        , endhour: endtime.getHours()
+                        , starttime : begin
+                    });// [DT[ETstartindex] , DT[i-1] ]  ]);
                 ETstartindex = i;
 
-            }  
+            }
         };
-        
+
         let ETRangeLength = ETRange.length;
         this.totalduration = ETRange[ETRangeLength - 1].cum_duration;
-        console.log(ETRange);
+        
+        let HourPrintArr: HourPrint[] = [];
 
-        //debugger;
-        this.svg.selectAll(".rect").remove();
-        // Rectangles
-        this.recSelection = this.svg
-            .selectAll('.rect')
-            .data(ETRange); // map data, with indexes, to svg element collection
-        const recSelectionMerged = this.recSelection
-            .enter()
-            .append('rect')
-            .classed('rect', true);
+        const start = DT2[0].hour;
+        const end = DT2[DT2.length-1].hour;
+        const range = [...Array(end - start + 1).keys()].map(x => x + start);
+        console.log(range);
+         
+        let xunit = options.viewport.width / this.totalduration;
+       
+        let startpos = ((60 - DT2[0].minute) * 60 * 1000) * xunit;
+        HourPrintArr.push({ x: startpos, hour: DT2[0].hour + 1 }); 
+        let hourblock = 60 * 60 * 1000 * xunit;
+        for (let i = 1; i < range.length; i++) {
 
-        this.svg.selectAll('.rect')
+            HourPrintArr.push({ x: startpos + (i * hourblock), hour: range[i]+1}); 
+            //console.log(i);
+        };
+        
+//TIMELINE MARKERS
+            this.svg.selectAll(".rect").remove();       
+            this.recSelection = this.svg
+                .selectAll('.rect')
+                .data(ETRange); // map data, with indexes, to svg element collection
+            const recSelectionMerged = this.recSelection
+                .enter()
+                .append('rect')
+                .classed('rect', true);
+            this.svg.selectAll('.rect')
+                .transition()
+                .duration(1000)
+                .attr("x", (d: ETRange) => {return  (d.width  * (d.cum_duration / this.totalduration)) }) //width devided by number of kpis for x position
+                .attr("y", height * 95/100)
+                .attr("width", 5)
+                .attr("height", 50)
+                .style("fill", "black")
+                .style("fill-opacity", 0.8);
+
+
+//STATE BLOCKS
+            this.svg.selectAll(".rectact").remove();
+            this.recactSelection = this.svg
+                .selectAll('.rectact')
+                .data(ETRange); // map data, with indexes, to svg element collection
+            const recSactelectionMerged = this.recactSelection
+                .enter()
+                .append('rect')
+                .classed('rectact', true);
+        this.svg.selectAll('.rectact')
             .transition()
             .duration(1000)
-            .attr("x", (d: ETRange) => {return  (d.width  * (d.cum_duration / this.totalduration))- 10 }) //width devided by number of kpis for x position
-            .attr("y", height * 95/100)
-            .attr("width", 5)
+            .attr("x", (d: ETRange) => { return ((d.width * (d.cum_duration / this.totalduration)) - ((d.width / this.totalduration) * d.duration)) + 5 }) //width devided by number of kpis for x position, //minus de breedte
+            .attr("y", height * 95 / 100)
+            .attr("width", (d: ETRange) => { return ((d.width / this.totalduration) * d.duration)-5})
             .attr("height", 50)
-            .style("fill", "black")
-            .style("fill-opacity", 0.8);
+          
             
+            .style("fill", (d: ETRange) => {
+                switch (true) {
+                    case d.state < 300: //docked
+                        return "pink"; break;
+                    case d.state == 513: //mowing
+                        return "blue"; break;
+                    case d.state == 514: //relocalizing
+                        return "orange"; break;
+                    case d.state == 518: //border cut
+                        return "green"; break;
+                    case d.state == 519: //idle in lawn
+                        return "red"; break;
+                    case d.state > 600: //going back
+                        return "purple"; break;
+                    default: return "white";
+                }
+            }   )
+            
+                .style("fill-opacity", 0.3);
 
-        //debugger;
-        this.svg.selectAll(".time").remove();
-        // Rectangles
-        this.txtSelection = this.svg
-            .selectAll('.time')
-            .data(ETRange); // map data, with indexes, to svg element collection
-        const txtSelectionMerged = this.txtSelection
-            .enter()
-            .append('text')
-            .classed('time', true);
+//HOURS ON TIMELINE
+            this.svg.selectAll(".time").remove();    
+            this.txtSelection = this.svg
+                .selectAll('.time')
+                .data(HourPrintArr); // map data, with indexes, to svg element collection
+            const txtSelectionMerged = this.txtSelection
+                .enter()
+                .append('text')
+                .classed('time', true);
+            this.svg.selectAll('.time')
+                .text((d : HourPrint)=> d.hour)
+                .attr("x", (d: HourPrint) => d.x) //width devided by number of kpis for x position
+                .attr("y", height * 107 / 100)
+                .attr("dy", "0.35em")
+                .attr("text-anchor", "start")
+                .style("font-size", 10 + "px");
 
-        this.svg.selectAll('.time')
-            .text((d : ETRange)=> d.endhour)
-            .attr("x", (d: ETRange) => { return (d.width * (d.cum_duration / this.totalduration)) - 10 }) //width devided by number of kpis for x position
-            .attr("y", height * 107 / 100)
-            .attr("dy", "0.35em")
-            .attr("text-anchor", "middle")
-            .style("font-size", 10 + "px");
-
-
-
-        //debugger;
-        console.log(ETRange);
-        /*
-        //DT.map(x => new Date(<string>x));
-        let min = Math.min.apply(null, DT2);
-        let max = Math.max.apply(null, DT2);
-        let diff = max - min;
-        */
-        //debugger;
 
         let data: [number, number][] = X.map((e, i) => [<number>e, <number>Y[i]]);
 
         this.svg.selectAll("polygon").remove(); this.svg.selectAll("circle").remove();  this.svg.selectAll(".circles").remove(); this.svg.selectAll("path").remove();
 
+//DRAW MAP
         for (let i = dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "SVG"); i < dataView.categorical.categories.length; i++) {
             let Z = dataView.categorical.categories[i].values
             let data3 = Z.map(function (d) { 
@@ -361,27 +397,26 @@ export class Visual implements IVisual {
             99999: "Offline",
         }
 
+//ANIMATE LINES
         async function print(start, eind, duur) {
-            let DS = DT2.slice(start, eind); // date times
             let val = MOWER_STATE_DESCRIPTION_DETAIL[<number>ET[start]];
             this.state.text(val);
-            let L = DS.length;
-            for (let i = 0; i < L; i++) {
+            
+            for (let i = start; i < eind; i++) {
                 //for (const dt of DTS2) { //use for loop instead of forEach https://stackoverflow.com/questions/37576685/using-async-await-with-a-foreach-loop
-                if (i % 100 == 0) {
-                    await sleep((duur / L)*100);
-                    this.textValue.text(DT2[i].hour + ":" + DT2[i].minute);
+                if (i % 2 == 0) {
+                    await sleep((duur / (eind-start))*2);
+                    this.textValue.text(DT2[i - ETRange[0].start].hour + ":" + DT2[i - ETRange[0].start].minute); //minus the empty rows for the map
                 }
             }
         }
-         //call om the this context mee te geven
 
 
         async function loopnumbers2() {
             let c: number = this.counter;
             for (let i = 0; i < ETRange.length; i++) {
                 if (c == this.counter) {
-                    console.log('stil running');
+                    //console.log('stil running');
                     let L = (line(data.slice(ETRange[i].start, ETRange[i].eind)));
                     //console.log(diff);
                     let eventcode = ETRange[i].state;
@@ -392,7 +427,7 @@ export class Visual implements IVisual {
                         .transition()
                         .duration(diff / speedsetting)
                         .ease(d3.easeLinear)
-                        .attr("x", width * (ETRange[i].cum_duration / this.totalduration) - 10);
+                        .attr("x", width * (ETRange[i].cum_duration / this.totalduration) );
 
                     let s = function (i) {
                         switch (true) {
