@@ -323,20 +323,22 @@ export class Visual implements IVisual {
             }).style("fill-opacity", 0.3);
         //pass SelectionId to the selectionManager
         recSactelectionMerged.on('click', (d: ETRange) => {
-            this.selectionManager.select(d.sels)
-            // returns array of selection Ids!
-                /*.then((ids: ISelectionId[]) => {
-                //for all rectangles do
-                recSactelectionMerged.each(function (s) {
-                    // if the selection manager returns no id's, then opacity 0.9,
-                    // if the element s matches the selection (ids), then 0.7 else 0.3
-                    let op = !ids.length ? 0.9 : s[2] == ids[0] ? 0.8 : 0.3
-                    d3Select(this)
-                        .transition()
-                        .style("fill-opacity", op)
-                        .duration(500)
-                })
-            })*/
+            if (d.sels != null) {
+                this.selectionManager.select(d.sels)
+                    // returns array of selection Ids!
+                    .then((ids: ISelectionId[]) => {
+                        //for all rectangles do
+                        recSactelectionMerged.each(function (s: ETRange) {
+                            // if the selection manager returns no id's, then opacity 0.9,
+                            // if the element s matches the selection (ids), then 0.7 else 0.3
+                            let op = !ids.length ? 0.9 : s.sels.length == ids.length ? 0.8 : 0.3
+                            d3Select(this)
+                                .transition()
+                                .style("fill-opacity", op)
+                        }
+                        )
+                    })
+            } else { this.selectionManager.clear() } // indien zelfde als een global var, dan clearen. 
         });
 
 //HOURS ON TIMELINE
