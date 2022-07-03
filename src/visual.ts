@@ -51,6 +51,10 @@ import { dataRoleHelper } from "powerbi-visuals-utils-dataviewutils";
 //for interfaces
 import { ContainerElement, Primitive } from "d3";
 
+import ISelectionManager = powerbi.extensibility.ISelectionManager; // added for selections
+import ISelectionId = powerbi.visuals.ISelectionId; //added for selections
+import IVisualHost = powerbi.extensibility.visual.IVisualHost; // added for selections
+
 interface XYDates {
     i: number;
     xy_date: Date;
@@ -73,6 +77,7 @@ interface ETRange {
     width: number;
     endhour: number;
     starttime: Date;
+    sels: ISelectionId[];
 };
 
 
@@ -93,9 +98,15 @@ export class Visual implements IVisual {
     txtSelection: d3.Selection<d3.BaseType, HourPrint, SVGElement, any>;
     counter: number = 0;
     recactSelection: d3.Selection<d3.BaseType, ETRange, SVGElement, any>;
-   
 
-    constructor(options: VisualConstructorOptions) {        
+    //selections
+    private selectionManager: ISelectionManager;
+    private host: IVisualHost;
+
+    constructor(options: VisualConstructorOptions) {  
+        this.host = options.host; //added for selections        
+        this.selectionManager = this.host.createSelectionManager(); // added for selections
+
         this.svg = d3.select(options.element)
             .append('svg')
             .classed('circleCard', true);
@@ -176,6 +187,16 @@ export class Visual implements IVisual {
             .style("fill-opacity", 0.8);
 
 
+        let Sel = dataView.categorical.categories[dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "I")];
+        let SelVals = Sel.values;
+        const SelValsIds = SelVals.map( (element, index)  => {
+            let selectionId: ISelectionId = this.host.createSelectionIdBuilder()
+                .withCategory(Sel, index)
+                .createSelectionId();
+            return selectionId
+        });
+
+        
         let X = dataView.categorical.categories[dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "X")].values
         X.map(x => <number>x);
         let Y = dataView.categorical.categories[dataRoleHelper.getCategoryIndexOfRole(dataView.categorical.categories, "Y")].values
@@ -213,7 +234,8 @@ export class Visual implements IVisual {
                         , cum_duration: this.cumduration//ETRange[i-1].duration + diff
                         , width: options.viewport.width
                         , endhour: endtime.getHours()
-                        , starttime : begin
+                        , starttime: begin
+                        , sels: SelValsIds.slice(ETstartindex,i-1)
                     });// [DT[ETstartindex] , DT[i-1] ]  ]);
                 ETstartindex = i;
 
@@ -277,8 +299,6 @@ export class Visual implements IVisual {
             .attr("y", height * 95 / 100)
             .attr("width", (d: ETRange) => { return ((d.width / this.totalduration) * d.duration)-5})
             .attr("height", 50)
-          
-            
             .style("fill", (d: ETRange) => {
                 switch (true) {
                     case d.state < 300: //docked
@@ -295,9 +315,11 @@ export class Visual implements IVisual {
                         return "purple"; break;
                     default: return "white";
                 }
-            }   )
-            
-                .style("fill-opacity", 0.3);
+            }).style("fill-opacity", 0.3);
+        //pass SelectionId to the selectionManager
+        recSactelectionMerged.on('click', (d : ETRange) => {
+            this.selectionManager.select(d.sels)
+        })
 
 //HOURS ON TIMELINE
             this.svg.selectAll(".time").remove();    
@@ -348,8 +370,8 @@ export class Visual implements IVisual {
         }
 
         const line = d3.line()            
-            .x(i => (i[1]) * (width / SVG_width2))
-            .y(i => (i[0]) * (height / SVG_height2))
+            .x(i => (i[0]) * (width / SVG_width2))
+            .y(i => (i[1]) * (height / SVG_height2))
 
         const sleep = ms => new Promise(r => setTimeout(r, ms));
 
