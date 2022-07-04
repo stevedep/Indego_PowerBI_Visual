@@ -109,6 +109,7 @@ export class Visual implements IVisual {
     private selectionManager: ISelectionManager;
     private host: IVisualHost;
     loopsel: (sel: any) => void;
+    selectedblock: number;
 
     constructor(options: VisualConstructorOptions) {  
         this.host = options.host; //added for selections        
@@ -342,22 +343,32 @@ export class Visual implements IVisual {
             }).style("fill-opacity", 0.3);
         //pass SelectionId to the selectionManager
         recSactelectionMerged.on('click', (d: ETRange) => {
-            recSactelectionMerged.each(function (s: ETRange) {
-                s
-                // if the selection manager returns no id's, then opacity 0.9,
-                // if the element s matches the selection (ids), then 0.7 else 0.3
-                let op = s.id == d.id ? 0.8 : 0.3
-                d3Select(this)
-                    .transition()
-                    .style("fill-opacity", op)
+            let val = MOWER_STATE_DESCRIPTION_DETAIL[d.state];
+            this.state.text(val);
+            this.textValue.text("");
+            this.counter++;
+            this.svg.selectAll("path").remove();
+            loopnumbers2.call(this, [d]);
+            
+            if (this.selectedblock != d.id) {
+                recSactelectionMerged.each(function (s: ETRange) {
+                    // if the selection manager returns no id's, then opacity 0.9,
+                    // if the element s matches the selection (ids), then 0.7 else 0.3
+                    let op = (s.id == d.id) ? 0.8 : 0.3
+                    d3Select(this)
+                        .transition()
+                        .style("fill-opacity", op)
+                });
 
-            });
 
-
-            if (d.sels != null) {
-                this.selectionManager.select(d.sels)
-
-            };
+                if (d.sels != null) {  this.selectionManager.select(d.sels) };
+            } else {
+                recSactelectionMerged.style("fill-opacity", 0.3);
+                this.selectionManager.clear();
+                this.svg.selectAll("path").remove();
+                loopnumbers2.call(this, ETRange);
+            }
+            this.selectedblock = d.id;
         });
 
 //HOURS ON TIMELINE
@@ -473,23 +484,24 @@ export class Visual implements IVisual {
         }
 
 
-        async function loopnumbers2() {
+        async function loopnumbers2(this, ETR : ETRange[]) {
             let c: number = this.counter;
-            for (let i = 0; i < ETRange.length; i++) {
+            for (let i = 0; i < ETR.length; i++) {
                 if (c == this.counter) {
                     //console.log('stil running');
-                    let L = (line(data.slice(ETRange[i].start, ETRange[i].eind)));
+                    let L = (line(data.slice(ETR[i].start, ETR[i].eind)));
                     //console.log(diff);
-                    let eventcode = ETRange[i].state;
-                    let diff = ETRange[i].duration; // duration
-                    print.call(this, ETRange[i].start, ETRange[i].eind, diff / speedsetting);
+                    let eventcode = ETR[i].state;
+                    let diff = ETR[i].duration; // duration
+                  //  print.call(this, ETR[i].start, ETR[i].eind, diff / speedsetting);
 
-                    this.dail
-                        .transition()
-                        .duration(diff / speedsetting)
-                        .ease(d3.easeLinear)
-                        .attr("x", width * (ETRange[i].cum_duration / this.totalduration) );
-
+                    if (ETR.length > 1) {
+                        this.dail
+                            .transition()
+                            .duration(diff / speedsetting)
+                            .ease(d3.easeLinear)
+                            .attr("x", width * (ETR[i].cum_duration / this.totalduration));
+                    }
                     let s = function (i) {
                         switch (true) {
                             case eventcode < 300: //docked
@@ -522,12 +534,12 @@ export class Visual implements IVisual {
                         .attr("stroke-linejoin", "round")
                         .attr("stroke-linecap", "round")
                         .attr("d", L);
-
+                    let duration = (ETR.length > 1) ? diff / speedsetting : 0
                     path
                         .interrupt()
                         .attr("stroke-dasharray", function (d) { return "0," + this.getTotalLength(); })
                         .transition()
-                        .duration(diff / speedsetting)
+                        .duration(duration)
                         .ease(d3.easeLinear)
                         .attr("stroke-dasharray", function (d) { return this.getTotalLength() + "," + this.getTotalLength(); })
                     await sleep(diff / speedsetting);
@@ -535,7 +547,7 @@ export class Visual implements IVisual {
             }
         }
         this.counter++;
-        loopnumbers2.call(this);
+        loopnumbers2.call(this, ETRange);
        
     }
     private static parseSettings(dataView: DataView): VisualSettings {
