@@ -74,6 +74,7 @@ interface HourPrint {
 // if (ET[i - 1] != null && diff != 0) ETRange.push([ETstartindex, i - 1, ET[i - 1], diff]);// [DT[ETstartindex] , DT[i-1] ]  ]);
 
 interface ETRange {
+    id: number;
     start: number;
     eind: number;
     state: number;
@@ -107,6 +108,7 @@ export class Visual implements IVisual {
     //selections
     private selectionManager: ISelectionManager;
     private host: IVisualHost;
+    loopsel: (sel: any) => void;
 
     constructor(options: VisualConstructorOptions) {  
         this.host = options.host; //added for selections        
@@ -136,7 +138,12 @@ export class Visual implements IVisual {
             .attr("dy", "0.35em")
             .attr("text-anchor", "middle")
             .style("font-size", 30 + "px");
-        }
+
+       
+
+    }
+
+
 
 
     public update(options: VisualUpdateOptions) {
@@ -221,6 +228,7 @@ export class Visual implements IVisual {
         this.cumduration = 0;
 
 //DEFINE RANGES FOR STATES
+        let statecounter: number = 0;
         for (let i = 0; i < ET.length; i++) {
             if (i != 0) if (ET[i] != ET[i - 1]) { // exclude the null range that is used to draw the map
                 let eind = new Date(<string>DT[i - 1]);
@@ -232,6 +240,7 @@ export class Visual implements IVisual {
                 if (ET[i - 1] != null && diff != 0)
 
                     ETRange.push({
+                        id: statecounter,
                         start: ETstartindex,
                         eind: i - 1,
                         state: <number>ET[i - 1],
@@ -242,11 +251,13 @@ export class Visual implements IVisual {
                         , starttime: begin
                         , sels: SelValsIds.slice(ETstartindex,i-1)
                     });// [DT[ETstartindex] , DT[i-1] ]  ]);
+                statecounter++;
                 ETstartindex = i;
 
             }
         };
 
+       
         let ETRangeLength = ETRange.length;
         this.totalduration = ETRange[ETRangeLength - 1].cum_duration;
         
@@ -287,6 +298,9 @@ export class Visual implements IVisual {
                 .style("fill", "black")
                 .style("fill-opacity", 0.8);
 
+        function loopsel (sel) {
+            console.log(sel);
+        };
 
 //STATE BLOCKS
             this.svg.selectAll(".rectact").remove();
@@ -302,7 +316,12 @@ export class Visual implements IVisual {
             .duration(1000)
             .attr("x", (d: ETRange) => { return ((d.width * (d.cum_duration / this.totalduration)) - ((d.width / this.totalduration) * d.duration)) + 5 }) //width devided by number of kpis for x position, //minus de breedte
             .attr("y", height * 95 / 100)
-            .attr("width", (d: ETRange) => { return ((d.width / this.totalduration) * d.duration)-5})
+            .attr("width", (d: ETRange) => {
+                let w;
+                w = ((d.width / this.totalduration) * d.duration) - 5;
+                w = w <= 0 ? 0 : w;
+                return w;
+            })
             .attr("height", 50)
             .style("fill", (d: ETRange) => {
                 switch (true) {
@@ -323,22 +342,22 @@ export class Visual implements IVisual {
             }).style("fill-opacity", 0.3);
         //pass SelectionId to the selectionManager
         recSactelectionMerged.on('click', (d: ETRange) => {
+            recSactelectionMerged.each(function (s: ETRange) {
+                s
+                // if the selection manager returns no id's, then opacity 0.9,
+                // if the element s matches the selection (ids), then 0.7 else 0.3
+                let op = s.id == d.id ? 0.8 : 0.3
+                d3Select(this)
+                    .transition()
+                    .style("fill-opacity", op)
+
+            });
+
+
             if (d.sels != null) {
                 this.selectionManager.select(d.sels)
-                    // returns array of selection Ids!
-                    .then((ids: ISelectionId[]) => {
-                        //for all rectangles do
-                        recSactelectionMerged.each(function (s: ETRange) {
-                            // if the selection manager returns no id's, then opacity 0.9,
-                            // if the element s matches the selection (ids), then 0.7 else 0.3
-                            let op = !ids.length ? 0.9 : s.sels.length == ids.length ? 0.8 : 0.3
-                            d3Select(this)
-                                .transition()
-                                .style("fill-opacity", op)
-                        }
-                        )
-                    })
-            } else { this.selectionManager.clear() } // indien zelfde als een global var, dan clearen. 
+
+            };
         });
 
 //HOURS ON TIMELINE
