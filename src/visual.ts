@@ -264,7 +264,6 @@ export class Visual implements IVisual {
 
             }
         };
-
        
         let ETRangeLength = ETRange.length;
         this.totalduration = ETRange[ETRangeLength - 1].cum_duration;
@@ -282,9 +281,7 @@ export class Visual implements IVisual {
         HourPrintArr.push({ x: startpos, hour: DT2[0].hour + 1 }); 
         let hourblock = 60 * 60 * 1000 * xunit;
         for (let i = 1; i < range.length; i++) {
-
-            HourPrintArr.push({ x: startpos + (i * hourblock), hour: range[i]+1}); 
-            //console.log(i);
+            HourPrintArr.push({ x: startpos + (i * hourblock), hour: range[i]+1});          
         };
         
 //TIMELINE MARKERS
@@ -304,20 +301,14 @@ export class Visual implements IVisual {
                 .attr("width", 5)
                 .attr("height", 50)
                 .style("fill", "black")
-                .style("fill-opacity", 0.8);
-
-        function loopsel (sel) {
-            console.log(sel);
-        };
+                .style("fill-opacity", 0.8);       
 
 //STATE BLOCKS
-
-
-            this.svg.selectAll(".rectact").remove();
-            this.recactSelection = this.svg
+        this.svg.selectAll(".rectact").remove();
+        this.recactSelection = this.svg
                 .selectAll('.rectact')
                 .data(ETRange); // map data, with indexes, to svg element collection
-            const recSactelectionMerged = this.recactSelection
+        const recSactelectionMerged = this.recactSelection
                 .enter()
                 .append('rect')
                 .classed('rectact', true);
@@ -369,7 +360,7 @@ export class Visual implements IVisual {
 
             if (this.selectedblock != d.id) {
                 let sels: ETRange[] = this.selections;
-                
+                recSactelectionMerged.style("fill-opacity", 0.3);
                 for (let j = 0; j < sels.length; j++) {
                     recSactelectionMerged.filter((i) => i.id === sels[j].id).style("fill-opacity", 0.8)
                 }
@@ -377,7 +368,7 @@ export class Visual implements IVisual {
             } else {
                 recSactelectionMerged.style("fill-opacity", 0.3);
                 this.selectionManager.clear();
-                this.svg.selectAll("path").remove();
+                this.svg.selectAll("path").remove();                
                 loopnumbers2.call(this, ETRange, true);
             }
             this.selectedblock = d.id;
