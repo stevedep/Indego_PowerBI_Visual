@@ -110,6 +110,7 @@ export class Visual implements IVisual {
     private host: IVisualHost;
     loopsel: (sel: any) => void;
     selectedblock: number;
+    statemouseover: d3.Selection<SVGTextElement, any, any, any>;
 
     constructor(options: VisualConstructorOptions) {  
         this.host = options.host; //added for selections        
@@ -155,6 +156,9 @@ export class Visual implements IVisual {
             .classed("textValue", true)
         this.state = this.container.append("text")
             .classed("textValue", true)
+        this.statemouseover = this.container.append("text")
+            .classed("textValue", true)
+
 
         this.times = this.container.append("text")
             .classed("time", true)
@@ -170,6 +174,14 @@ export class Visual implements IVisual {
             .text("Value")
             .attr("x", "75%")
             .attr("y", "75%")
+            .attr("dy", "0.35em")
+            .attr("text-anchor", "middle")
+            .style("font-size", 20 + "px");
+
+        this.statemouseover
+            .text("Value")
+            .attr("x", "75%")
+            .attr("y", "80%")
             .attr("dy", "0.35em")
             .attr("text-anchor", "middle")
             .style("font-size", 20 + "px");
@@ -370,6 +382,10 @@ export class Visual implements IVisual {
             }
             this.selectedblock = d.id;
         });
+        recSactelectionMerged.on('mouseover', (d: ETRange) => {
+            let val = MOWER_STATE_DESCRIPTION_DETAIL[d.state];
+            this.statemouseover.text(val);
+        })
 
 //HOURS ON TIMELINE
             this.svg.selectAll(".time").remove();    
@@ -493,9 +509,9 @@ export class Visual implements IVisual {
                     //console.log(diff);
                     let eventcode = ETR[i].state;
                     let diff = ETR[i].duration; // duration
-                  //  print.call(this, ETR[i].start, ETR[i].eind, diff / speedsetting);
 
                     if (ETR.length > 1) {
+                        print.call(this, ETR[i].start, ETR[i].eind, diff / speedsetting);
                         this.dail
                             .transition()
                             .duration(diff / speedsetting)
