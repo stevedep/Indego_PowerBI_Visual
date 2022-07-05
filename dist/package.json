@@ -1,6 +1,6 @@
 {
     "version": "1.0.0",
-    "author": {"name":"IndegoDev","email":"IndegoDev@gmail.com"},
+    "author": {"name":"Steve de Peijper","email":"Steve.dePeijper@gmail.com"},
     "resources": [
         {
             "resourceId": "rId0",
@@ -8,7 +8,7 @@
             "file": "resources/testF1735EA569854534B485DEC49DF86504.pbiviz.json"
         }
     ],
-    "visual": {"name":"test","displayName":"test","guid":"testF1735EA569854534B485DEC49DF86504","visualClassName":"Visual","version":"1.0.0","description":"Indego Visual","supportUrl":"www.google.com","gitHubUrl":""},
+    "visual": {"name":"IndegoPath","displayName":"IndegoPath","guid":"testF1735EA569854534B485DEC49DF86504","visualClassName":"Visual","version":"1.0.0","description":"Display the path of your Idego lawn mower.","supportUrl":"https://github.com/stevedep/Indego_PowerBI_Visual/tree/master#readme","gitHubUrl":"https://github.com/stevedep/Indego_PowerBI_Visual"},
     "metadata": {
         "pbivizjson": {
             "resourceId": "rId0"

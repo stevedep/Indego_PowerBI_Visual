@@ -1,18 +1,18 @@
 {
   "visual": {
-    "name": "test",
-    "displayName": "test",
+    "name": "IndegoPath",
+    "displayName": "IndegoPath",
     "guid": "testF1735EA569854534B485DEC49DF86504",
     "visualClassName": "Visual",
     "version": "1.0.0",
-    "description": "Indego Visual",
-    "supportUrl": "www.google.com",
-    "gitHubUrl": ""
+    "description": "Display the path of your Idego lawn mower.",
+    "supportUrl": "https://github.com/stevedep/Indego_PowerBI_Visual/tree/master#readme",
+    "gitHubUrl": "https://github.com/stevedep/Indego_PowerBI_Visual"
   },
   "apiVersion": "3.8.0",
   "author": {
-    "name": "IndegoDev",
-    "email": "IndegoDev@gmail.com"
+    "name": "Steve de Peijper",
+    "email": "Steve.dePeijper@gmail.com"
   },
   "assets": { "icon": "assets/icon.png" },
   "externalJS": null,
