@@ -27,18 +27,15 @@
 "use strict";
 
 import { dataViewObjectsParser } from "powerbi-visuals-utils-dataviewutils";
-import DataViewObjectsParser = dataViewObjectsParser.DataViewObjectsParser;
+import DataViewObjectsParser from "dataViewObjectsParser.DataViewObjectsParser";
 
 export class VisualSettings extends DataViewObjectsParser {
-      public dataPoint: dataPointSettings = new dataPointSettings();
-      }
+  public dataPoint: dataPointSettings = new dataPointSettings();
+}
 
-    export class dataPointSettings {
-     
-     // Speed
-        public speed: number = 1000;
-        public SVG_width: number = 2800;
-        public SVG_height: number = 1800;
-        
-     }
-
+export class dataPointSettings {
+  // Speed
+  public speed: number = 1000;
+  public SVG_width: number = 2800;
+  public SVG_height: number = 1800;
+}
